@@ -40,6 +40,12 @@
             <artifactId>rxjava</artifactId>
         </dependency>
 
+        <!--Spring-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+        </dependency>
+
         <!--test-->
         <dependency>
             <groupId>junit</groupId>
