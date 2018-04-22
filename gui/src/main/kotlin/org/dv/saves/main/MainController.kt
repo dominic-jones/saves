@@ -5,7 +5,7 @@ import io.reactivex.subjects.PublishSubject
 import mu.KLogging
 import org.springframework.stereotype.Service
 import tornadofx.*
-import java.io.File
+import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -15,13 +15,19 @@ class MainController : Controller() {
 
     val backupBath: PublishSubject<String> = PublishSubject.create()
 
+    val initConfig: PublishSubject<Unit> = PublishSubject.create()
+
     val pathErrors: Observable<String>
     val validPath: Observable<Boolean>
+    val validConfig: Observable<Boolean>
 
     init {
-        pathErrors = backupBath.debounce(500, TimeUnit.MILLISECONDS)
+        val configPath = backupBath.debounce(500, TimeUnit.MILLISECONDS)
                 .doOnNext { logger.info { "Backup path changed to '$it'" } }
-                .map { File(it) }
+                .map { Paths.get(it) }
+
+        pathErrors = configPath
+                .map { it.toFile() }
                 .map {
                     if (!it.exists()) "Path does not exist"
                     else if (!it.isDirectory) "Path is not a directory"
@@ -36,5 +42,13 @@ class MainController : Controller() {
         }.doOnNext { logger.info { "Path is valid: '$it'" } }
                 .startWith(false)
 
+        validConfig = configPath.map { it.resolve("config.json") }
+                .map {
+                    it.toFile().exists()
+                }.startWith(false)
+
+        initConfig
+                .doOnNext { logger.info { "Initialising config.. " } }
+                .subscribe()
     }
 }

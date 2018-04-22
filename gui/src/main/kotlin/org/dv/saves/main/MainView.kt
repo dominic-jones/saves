@@ -1,6 +1,9 @@
 package org.dv.saves.main
 
+import com.github.thomasnield.rxkotlinfx.actionEvents
 import com.github.thomasnield.rxkotlinfx.events
+import com.github.thomasnield.rxkotlinfx.toBinding
+import io.reactivex.rxkotlin.zipWith
 import javafx.scene.input.KeyEvent
 import javafx.scene.paint.Color
 import org.springframework.stereotype.Component
@@ -34,6 +37,16 @@ class MainView : View() {
             text {
                 controller.pathErrors
                         .subscribe { text = it }
+            }
+            button("Init") {
+                enableWhen(
+                        controller.validPath
+                                .zipWith(controller.validConfig) { path, config -> path && !config }
+                                .toBinding()
+                )
+                actionEvents()
+                        .map { Unit }
+                        .subscribe(controller.initConfig)
             }
         }
     }
