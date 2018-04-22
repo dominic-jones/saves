@@ -17,11 +17,11 @@ class MainView : View() {
     override val root = vbox {
         hbox {
             label("Backup dir")
-            textfield {
+            textfield(System.getProperty("user.home") + "/saves-test/backup") {
                 events(KeyEvent.KEY_RELEASED)
                         .map { text }
                         .distinctUntilChanged()
-                        .subscribe(controller.backupBath)
+                        .subscribe(controller.backupPath)
 
                 controller.validPath
                         .subscribe {
