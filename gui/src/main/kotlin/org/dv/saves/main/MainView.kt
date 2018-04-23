@@ -41,7 +41,7 @@ class MainView : View() {
             button("Init") {
                 enableWhen(
                         controller.validPath
-                                .zipWith(controller.validConfig) { path, config -> path && !config }
+                                .zipWith(controller.validConfig) { path, config -> path /*&& !config*/ }
                                 .toBinding()
                 )
                 actionEvents()

@@ -62,7 +62,12 @@
             <artifactId>jackson-module-kotlin</artifactId>
         </dependency>
 
-        <!--test-->
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+        </dependency>
+
+        <!--Test-->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>

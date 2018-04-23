@@ -17,6 +17,8 @@ class MainController : Controller() {
 
     companion object : KLogging()
 
+    private val configService: ConfigService by di()
+
     val backupPath: PublishSubject<String> = PublishSubject.create()
     val configFile: Observable<Path>
 
@@ -26,7 +28,7 @@ class MainController : Controller() {
     val validPath: Observable<Boolean>
     val validConfig: Observable<Boolean>
 
-    val objectMapper = ObjectMapper()
+    private val objectMapper: ObjectMapper = ObjectMapper()
             .enable(INDENT_OUTPUT)
 
     init {
@@ -59,8 +61,9 @@ class MainController : Controller() {
 
         initConfig
                 .doOnNext { logger.info { "Initialising config.. " } }
-                .map { Data(setOf(Machine("test"))) }
+                .map { configService.initData() }
                 .zipWith(configFile) { data, path -> path.toFile().printWriter().use { objectMapper.writeValue(it, data) } }
                 .subscribe()
     }
+
 }

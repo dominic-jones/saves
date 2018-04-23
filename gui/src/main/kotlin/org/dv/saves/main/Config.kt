@@ -1,6 +1,6 @@
 package org.dv.saves.main
 
-data class Data(
+data class Config(
         val machines: Set<Machine>
 )
 
