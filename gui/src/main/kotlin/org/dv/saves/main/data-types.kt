@@ -1,5 +1,7 @@
 package org.dv.saves.main
 
+import java.nio.file.Paths
+
 data class GlobalConfig(
         val backupLocation: String = ""
 ) {
@@ -13,3 +15,9 @@ data class Config(
 data class Machine(
         val system: String
 )
+
+data class SourceDirectory(
+        val dir: String
+){
+    fun isValid() = Paths.get(dir).toFile().isDirectory
+}

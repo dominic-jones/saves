@@ -3,6 +3,7 @@ package org.dv.saves
 import javafx.application.Application
 import javafx.stage.Stage
 import org.dv.saves.config.Config
+import org.dv.saves.main.MainStyle
 import org.dv.saves.main.MainView
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
 import tornadofx.App
@@ -14,7 +15,7 @@ fun main(args: Array<String>) {
     Application.launch(Saves::class.java, *args)
 }
 
-class Saves : App(MainView::class) {
+class Saves : App(MainView::class, MainStyle::class) {
     init {
         val context = AnnotationConfigApplicationContext(Config::class.java)
         FX.dicontainer = object : DIContainer {
