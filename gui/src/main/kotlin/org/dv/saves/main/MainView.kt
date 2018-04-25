@@ -2,28 +2,35 @@ package org.dv.saves.main
 
 import com.github.thomasnield.rxkotlinfx.actionEvents
 import com.github.thomasnield.rxkotlinfx.events
+import com.github.thomasnield.rxkotlinfx.subscribeOnFx
 import com.github.thomasnield.rxkotlinfx.toBinding
-import io.reactivex.rxkotlin.zipWith
-import javafx.scene.input.KeyEvent
+import javafx.event.ActionEvent
 import javafx.scene.paint.Color
-import org.springframework.stereotype.Component
+import mu.KLogging
 import tornadofx.*
 
-@Component
 class MainView : View() {
+
+    companion object : KLogging()
 
     private val controller: MainController by inject()
 
     override val root = vbox {
         hbox {
             label("Backup dir")
-            textfield(System.getProperty("user.home") + "/saves-test/backup") {
-                events(KeyEvent.KEY_RELEASED)
+            textfield {
+                useMaxWidth = true
+                controller.global.subscribe { text = it.backupLocation }
+
+                events(ActionEvent.ACTION)
+                        .map { Unit }
+                        .startWith(Unit)
                         .map { text }
                         .distinctUntilChanged()
                         .subscribe(controller.backupPath)
 
                 controller.validPath
+                        .subscribeOnFx()
                         .subscribe {
                             when (it) {
                                 true -> style = null
@@ -34,20 +41,21 @@ class MainView : View() {
                             }
                         }
             }
-            text {
-                controller.pathErrors
-                        .subscribe { text = it }
-            }
-            button("Init") {
-                enableWhen(
-                        controller.validPath
-                                .zipWith(controller.validConfig) { path, config -> path /*&& !config*/ }
-                                .toBinding()
-                )
-                actionEvents()
-                        .map { Unit }
-                        .subscribe(controller.initConfig)
-            }
+        }
+        button("Init") {
+            enableWhen(
+                    controller.validPath
+                            .subscribeOnFx()
+                            .toBinding()
+            )
+            actionEvents()
+                    .map { Unit }
+                    .subscribe(controller.initConfig)
+        }
+        text {
+            controller.pathErrors
+                    .subscribeOnFx()
+                    .subscribe { text = it }
         }
     }
 

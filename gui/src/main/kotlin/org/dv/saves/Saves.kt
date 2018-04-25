@@ -1,40 +1,30 @@
 package org.dv.saves
 
 import javafx.application.Application
-import javafx.scene.Scene
 import javafx.stage.Stage
 import org.dv.saves.config.Config
 import org.dv.saves.main.MainView
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
-import tornadofx.*
-import javax.inject.Inject
+import tornadofx.App
+import tornadofx.DIContainer
+import tornadofx.FX
 import kotlin.reflect.KClass
 
 fun main(args: Array<String>) {
     Application.launch(Saves::class.java, *args)
 }
 
-class Saves : Application() {
-
-    @Inject
-    lateinit var mainView: MainView
-
+class Saves : App(MainView::class) {
     init {
         val context = AnnotationConfigApplicationContext(Config::class.java)
         FX.dicontainer = object : DIContainer {
             override fun <T : Any> getInstance(type: KClass<T>): T = context.getBean(type.java)
         }
-        context.autowireCapableBeanFactory.autowireBean(this)
     }
 
-    override fun start(primaryStage: Stage) {
-        primaryStage.title = "org.dv.saves.Saves"
-        primaryStage.scene = Scene(
-                mainView.root,
-                1024.0,
-                768.0
-        )
-        primaryStage.show()
+    override fun start(stage: Stage) {
+        super.start(stage)
+        stage.width = 1024.0
+        stage.height = 768.0
     }
-
 }

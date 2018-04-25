@@ -1,40 +1,39 @@
 package org.dv.saves.main
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT
 import io.reactivex.Observable
-import io.reactivex.rxkotlin.zipWith
+import io.reactivex.rxkotlin.withLatestFrom
+import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
+import io.reactivex.subjects.Subject
 import mu.KLogging
-import org.springframework.stereotype.Service
-import tornadofx.*
-import java.nio.file.Path
+import tornadofx.Controller
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 
-@Service
 class MainController : Controller() {
 
     companion object : KLogging()
 
     private val configService: ConfigService by di()
 
-    val backupPath: PublishSubject<String> = PublishSubject.create()
-    val configFile: Observable<Path>
+    val backupPath: Subject<String> = BehaviorSubject.create()
 
     val initConfig: PublishSubject<Unit> = PublishSubject.create()
 
     val pathErrors: Observable<String>
     val validPath: Observable<Boolean>
-    val validConfig: Observable<Boolean>
 
-    private val objectMapper: ObjectMapper = ObjectMapper()
-            .enable(INDENT_OUTPUT)
+    val global: Observable<GlobalConfig> = Observable.fromCallable { configService.readGlobal() }
+            .doOnNext { logger.info { "Found global '$it'" } }
+            .filter { it.isValid() }
+            .doOnNext { logger.info { "global isValid '$it'" } }
+            .cache()
 
     init {
         val configPath = backupPath.debounce(500, TimeUnit.MILLISECONDS)
-                .doOnNext { logger.info { "Backup path changed to '$it'" } }
                 .map { Paths.get(it) }
+                .doOnNext { logger.info { "Backup path changed to '$it'" } }
+                .cache()
 
         pathErrors = configPath
                 .map { it.toFile() }
@@ -44,26 +43,21 @@ class MainController : Controller() {
                     else ""
                 }
 
-        validPath = pathErrors.map {
-            when (it) {
-                "" -> true
-                else -> false
-            }
-        }.doOnNext { logger.info { "Path is valid: '$it'" } }
-                .startWith(false)
-
-
-        configFile = configPath.map { it.resolve("config.json") }
-        validConfig = configFile
+        validPath = pathErrors
+                .doOnNext { logger.info { "pathErrors '$it'" } }
                 .map {
-                    it.toFile().exists()
-                }.startWith(false)
+                    when (it) {
+                        "" -> true
+                        else -> false
+                    }
+                }
+                .doOnNext { logger.info { "Path is valid: '$it'" } }
+                .startWith(false)
+                .cache()
 
         initConfig
                 .doOnNext { logger.info { "Initialising config.. " } }
-                .map { configService.initData() }
-                .zipWith(configFile) { data, path -> path.toFile().printWriter().use { objectMapper.writeValue(it, data) } }
+                .withLatestFrom(configPath) { _, path -> configService.initData(path) }
                 .subscribe()
     }
-
 }
