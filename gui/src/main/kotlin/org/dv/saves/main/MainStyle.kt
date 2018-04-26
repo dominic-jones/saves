@@ -1,8 +1,7 @@
 package org.dv.saves.main
 
 import javafx.scene.paint.Color
-import tornadofx.Stylesheet
-import tornadofx.cssclass
+import tornadofx.*
 
 class MainStyle : Stylesheet() {
     companion object {

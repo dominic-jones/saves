@@ -6,9 +6,7 @@ import org.dv.saves.config.Config
 import org.dv.saves.main.MainStyle
 import org.dv.saves.main.MainView
 import org.springframework.context.annotation.AnnotationConfigApplicationContext
-import tornadofx.App
-import tornadofx.DIContainer
-import tornadofx.FX
+import tornadofx.*
 import kotlin.reflect.KClass
 
 fun main(args: Array<String>) {

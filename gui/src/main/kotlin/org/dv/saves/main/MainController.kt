@@ -1,8 +1,10 @@
 package org.dv.saves.main
 
-import com.github.thomasnield.rxkotlinfx.changes
+import com.github.thomasnield.rxkotlinfx.additions
+import com.github.thomasnield.rxkotlinfx.removals
+import io.reactivex.BackpressureStrategy
+import io.reactivex.Flowable
 import io.reactivex.Observable
-import io.reactivex.rxjavafx.sources.Flag
 import io.reactivex.rxkotlin.withLatestFrom
 import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
@@ -10,7 +12,11 @@ import io.reactivex.subjects.Subject
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import mu.KLogging
-import tornadofx.Controller
+import tornadofx.*
+import java.nio.file.Files.exists
+import java.nio.file.Files.isDirectory
+import java.nio.file.Files.newDirectoryStream
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.TimeUnit
 
@@ -29,7 +35,8 @@ class MainController : Controller() {
     val pathErrors: Observable<String>
     val validPath: Observable<Boolean>
 
-    val sourceDirectories: ObservableList<SourceDirectory> = FXCollections.observableArrayList<SourceDirectory>()
+    val sourceDirectories: ObservableList<SourceDirectory> = FXCollections.observableArrayList()
+    val sourceGames: ObservableList<SourceGame> = FXCollections.observableArrayList()
 
     val global: Observable<GlobalConfig> = Observable.fromCallable { configService.readGlobal() }
             .doOnNext { logger.info { "Found global '$it'" } }
@@ -44,10 +51,9 @@ class MainController : Controller() {
                 .cache()
 
         pathErrors = configPath
-                .map { it.toFile() }
                 .map {
                     if (!it.exists()) "Path does not exist"
-                    else if (!it.isDirectory) "Path is not a directory"
+                    else if (!it.isDirectory()) "Path is not a directory"
                     else ""
                 }
 
@@ -72,7 +78,28 @@ class MainController : Controller() {
                 .map { SourceDirectory(it) }
                 .subscribe { sourceDirectories += it }
 
-        sourceDirectories.changes()
-                .filter { it.flag != Flag.REMOVED }
+        sourceDirectories.removals()
+                .doOnNext { logger.info { "sourceDir removals '$it'" } }
+                .doOnNext { configService.removeSourceDirectory(it.dir) }
+                .subscribe { src -> sourceGames.removeIf { it.sourceDirectory == src.dir } }
+
+        sourceDirectories.additions()
+                .doOnNext { logger.info { "sourceDir additions '$it'" } }
+                .map { it.dir }
+                .map { Paths.get(it) }
+                .filter { it.isDirectory() }
+                .doOnNext { configService.addSourceDirectory(it.toString()) }
+                .toFlowable(BackpressureStrategy.BUFFER)
+                .flatMap { src ->
+                    Flowable.using(
+                            { newDirectoryStream(src) },
+                            { reader -> Flowable.fromIterable<Path>(reader).filter { it.isDirectory() }.map { SourceGame(sourceDirectory = src.toString(), gameDirectory = it.toString()) } },
+                            { reader -> reader.close() }
+                    )
+                }
+                .subscribe { sourceGames.add(it) }
     }
+
+    private fun Path.exists(): Boolean = exists(this)
+    private fun Path.isDirectory(): Boolean = isDirectory(this)
 }

@@ -13,7 +13,8 @@ data class Config(
 )
 
 data class Machine(
-        val system: String
+        val machineId: String,
+        val sourceDirectories: MutableSet<String>
 )
 
 data class SourceDirectory(
@@ -21,3 +22,8 @@ data class SourceDirectory(
 ) {
     fun isValid() = Paths.get(dir).toFile().isDirectory
 }
+
+data class SourceGame(
+        val sourceDirectory: String,
+        val gameDirectory: String
+)

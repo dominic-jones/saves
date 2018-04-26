@@ -87,6 +87,10 @@ class MainView : View() {
                         .subscribe(controller.addSourceDirectory)
             }
         }
+        tableview(controller.sourceGames) {
+            readonlyColumn("SourceDir", SourceGame::sourceDirectory)
+            readonlyColumn("GameDir", SourceGame::gameDirectory)
+        }
     }
 
 }
