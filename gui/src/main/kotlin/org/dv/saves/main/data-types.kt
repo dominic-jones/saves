@@ -18,6 +18,6 @@ data class Machine(
 
 data class SourceDirectory(
         val dir: String
-){
+) {
     fun isValid() = Paths.get(dir).toFile().isDirectory
 }
