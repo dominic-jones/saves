@@ -52,10 +52,11 @@ class ConfigService(
         val config = Config(
                 setOf(Machine(
                         id,
+                        mutableSetOf(),
                         mutableSetOf()
                 ))
         )
-        saveConfig(configPath, config)
+        saveConfig(config, configPath)
 
         val globalPath = configPath.resolve(System.getProperty("user.home"))
                 .resolve(".saves.cfg")
@@ -71,13 +72,13 @@ class ConfigService(
                 .toString()
     }
 
-    fun readThisMachine(backupLocation: String): Machine {
+    fun readThisMachine(backupLocation: String = readGlobal().backupLocation): Machine {
         return readConfig(backupLocation)
                 .machines
                 .find { it.machineId == machineId() }!!
     }
 
-    private fun readConfig(backupLocation: String): Config {
+    private fun readConfig(backupLocation: String = readGlobal().backupLocation): Config {
 
         return Paths.get(backupLocation)
                 .resolve("config.cfg")
@@ -86,7 +87,7 @@ class ConfigService(
                 .use { objectMapper.readValue(it) }
     }
 
-    private fun saveConfig(configPath: Path, config: Config) {
+    private fun saveConfig(config: Config, configPath: Path = Paths.get(readGlobal().backupLocation)) {
         configPath.resolve("config.cfg")
                 .toFile()
                 .printWriter()
@@ -99,7 +100,7 @@ class ConfigService(
         config.machines
                 .find { it.machineId == machineId() }
                 ?.sourceDirectories?.add(dir)
-        saveConfig(Paths.get(backupLocation), config)
+        saveConfig(config, Paths.get(backupLocation))
     }
 
     fun removeSourceDirectory(dir: String) {
@@ -109,7 +110,18 @@ class ConfigService(
                 .find { it.machineId == machineId() }
                 ?.sourceDirectories
                 ?.remove(dir)
-        saveConfig(Paths.get(backupLocation), config)
+        saveConfig(config, Paths.get(backupLocation))
+    }
+
+    fun update(machine: Machine) {
+        val config = readConfig()
+        val newConfig = config.copy(
+                machines = setOf(
+                        *config.machines.filter { it.machineId != machineId() }.toTypedArray(),
+                        machine
+                )
+        )
+        saveConfig(newConfig)
     }
 
 }

@@ -92,11 +92,12 @@ class MainView : View() {
             prefHeight = 140.0
             selectionModel.selectedItemProperty()
                     .toObservable()
-                    .doOnNext { logger.info { "thing $it" } }
                     .subscribe(controller.selectedGame)
             readonlyColumn("SourceDir", SourceGame::sourceDirectory)
             readonlyColumn("GameDir", SourceGame::gameDirectory)
-            column("Glob", SourceGame::glob).makeEditable()
+            column("Glob", SourceGame::glob).makeEditable().setOnEditCommit {
+                controller.onCellEdit.onNext(it.rowValue.copy(glob = it.newValue))
+            }
         }
         tableview(controller.gameFiles) {
             prefHeight = 140.0

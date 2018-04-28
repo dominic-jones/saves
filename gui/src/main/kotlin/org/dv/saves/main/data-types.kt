@@ -14,7 +14,8 @@ data class Config(
 
 data class Machine(
         val machineId: String,
-        val sourceDirectories: MutableSet<String>
+        val sourceDirectories: MutableSet<String>,
+        val sourceGames: MutableSet<SourceGame>
 )
 
 data class SourceDirectory(

@@ -6,6 +6,7 @@ import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.rxkotlin.withLatestFrom
+import io.reactivex.rxkotlin.zipWith
 import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
@@ -25,6 +26,8 @@ class MainController : Controller() {
     companion object : KLogging()
 
     private val configService: ConfigService by di()
+
+    private val localConfig: Subject<Machine> = BehaviorSubject.create()
 
     val backupPath: Subject<String> = BehaviorSubject.create()
     val initConfig: PublishSubject<Unit> = PublishSubject.create()
@@ -46,6 +49,8 @@ class MainController : Controller() {
             .doOnNext { logger.info { "global isValid '$it'" } }
             .cache()
 
+    val onCellEdit: PublishSubject<SourceGame> = PublishSubject.create()
+
     init {
         Observable.just(Unit)
                 .doOnNext { logger.info { "${this.javaClass.name} started" } }
@@ -58,8 +63,16 @@ class MainController : Controller() {
 
         configPath.map { configService.readThisMachine(it.toString()) }
                 .doOnNext { logger.info { "Loading config for machine '$it'" } }
+                .subscribe(localConfig)
+
+        localConfig
                 .map { it.sourceDirectories.map { SourceDirectory(it) } }
                 .subscribe { sourceDirectories.addAll(it) }
+
+        localConfig.distinct()
+                .doOnNext { configService.update(it) }
+                .doOnNext { logger.info { "Saving config '$it'.. " } }
+                .subscribe()
 
         pathErrors = configPath
                 .map {
@@ -109,6 +122,14 @@ class MainController : Controller() {
                     )
                 }
                 .subscribe { sourceGames.add(it) }
+
+        onCellEdit
+                .doOnNext { logger.info { "Updating sourceGame '$it'" } }
+                .zipWith(localConfig) { sourceGame, machine ->
+                    machine.sourceGames.removeIf { it.gameDirectory == it.gameDirectory }
+                    machine.sourceGames.add(sourceGame)
+                    machine
+                }.subscribe(localConfig)
 
         selectedGame.debounce(500, MILLISECONDS)
                 .doOnNext { logger.info { "Game selected '$it'" } }
