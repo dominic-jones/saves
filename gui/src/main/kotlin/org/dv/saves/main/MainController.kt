@@ -18,7 +18,7 @@ import java.nio.file.Files.isDirectory
 import java.nio.file.Files.newDirectoryStream
 import java.nio.file.Path
 import java.nio.file.Paths
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeUnit.MILLISECONDS
 
 class MainController : Controller() {
 
@@ -36,6 +36,9 @@ class MainController : Controller() {
 
     val sourceDirectories: ObservableList<SourceDirectory> = FXCollections.observableArrayList()
     val sourceGames: ObservableList<SourceGame> = FXCollections.observableArrayList()
+    val gameFiles: ObservableList<GameFile> = FXCollections.observableArrayList()
+
+    val selectedGame: PublishSubject<SourceGame> = PublishSubject.create()
 
     val global: Observable<GlobalConfig> = Observable.fromCallable { configService.readGlobal() }
             .doOnNext { logger.info { "Found global '$it'" } }
@@ -48,13 +51,13 @@ class MainController : Controller() {
                 .doOnNext { logger.info { "${this.javaClass.name} started" } }
                 .subscribe()
 
-        val configPath = backupPath.debounce(500, TimeUnit.MILLISECONDS)
+        val configPath = backupPath.debounce(500, MILLISECONDS)
                 .map { Paths.get(it) }
                 .doOnNext { logger.info { "Backup path changed to '$it'" } }
                 .cache()
 
         configPath.map { configService.readThisMachine(it.toString()) }
-                .doOnNext { logger.info { "This happened '$it'" } }
+                .doOnNext { logger.info { "Loading config for machine '$it'" } }
                 .map { it.sourceDirectories.map { SourceDirectory(it) } }
                 .subscribe { sourceDirectories.addAll(it) }
 
@@ -101,11 +104,26 @@ class MainController : Controller() {
                 .flatMap { src ->
                     Flowable.using(
                             { newDirectoryStream(src) },
-                            { reader -> Flowable.fromIterable<Path>(reader).filter { it.isDirectory() }.map { SourceGame(sourceDirectory = src.toString(), gameDirectory = it.toString()) } },
+                            { reader -> Flowable.fromIterable(reader).filter { it.isDirectory() }.map { SourceGame(sourceDirectory = src.toString(), gameDirectory = it.toString(), glob = "") } },
                             { reader -> reader.close() }
                     )
                 }
                 .subscribe { sourceGames.add(it) }
+
+        selectedGame.debounce(500, MILLISECONDS)
+                .doOnNext { logger.info { "Game selected '$it'" } }
+                .toFlowable(BackpressureStrategy.BUFFER)
+                .map { it.gameDirectory }
+                .map { Paths.get(it) }
+                .flatMap { src ->
+                    Flowable.using(
+                            { newDirectoryStream(src) },
+                            { reader -> Flowable.fromIterable(reader).filter { !it.isDirectory() } },
+                            { reader -> reader.close() }
+                    )
+                }
+                .map { GameFile(file = it.toString()) }
+                .subscribe { gameFiles.add(it) }
     }
 
     private fun Path.exists(): Boolean = exists(this)

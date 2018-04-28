@@ -4,6 +4,7 @@ import com.github.thomasnield.rxkotlinfx.actionEvents
 import com.github.thomasnield.rxkotlinfx.events
 import com.github.thomasnield.rxkotlinfx.subscribeOnFx
 import com.github.thomasnield.rxkotlinfx.toBinding
+import com.github.thomasnield.rxkotlinfx.toObservable
 import javafx.event.ActionEvent
 import javafx.scene.control.cell.TextFieldListCell
 import javafx.scene.paint.Color
@@ -89,8 +90,17 @@ class MainView : View() {
         }
         tableview(controller.sourceGames) {
             prefHeight = 140.0
+            selectionModel.selectedItemProperty()
+                    .toObservable()
+                    .doOnNext { logger.info { "thing $it" } }
+                    .subscribe(controller.selectedGame)
             readonlyColumn("SourceDir", SourceGame::sourceDirectory)
             readonlyColumn("GameDir", SourceGame::gameDirectory)
+            column("Glob", SourceGame::glob).makeEditable()
+        }
+        tableview(controller.gameFiles) {
+            prefHeight = 140.0
+            readonlyColumn("Save File", GameFile::file)
         }
     }
 

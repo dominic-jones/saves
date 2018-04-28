@@ -25,5 +25,10 @@ data class SourceDirectory(
 
 data class SourceGame(
         val sourceDirectory: String,
-        val gameDirectory: String
+        val gameDirectory: String,
+        var glob: String
+)
+
+data class GameFile(
+        val file: String
 )
