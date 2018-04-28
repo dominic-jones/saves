@@ -27,7 +27,7 @@ data class SourceDirectory(
 data class SourceGame(
         val sourceDirectory: String,
         val gameDirectory: String,
-        var glob: String
+        var glob: String = "*"
 )
 
 data class GameFile(

@@ -67,6 +67,7 @@ class MainController : Controller() {
 
         localConfig
                 .map { it.sourceDirectories.map { SourceDirectory(it) } }
+                .doOnNext { sourceDirectories.clear() }
                 .subscribe { sourceDirectories.addAll(it) }
 
         localConfig.distinct()
@@ -112,33 +113,42 @@ class MainController : Controller() {
                 .map { it.dir }
                 .map { Paths.get(it) }
                 .filter { it.isDirectory() }
+                .doOnNext { sourceGames.clear() }
                 .doOnNext { configService.addSourceDirectory(it.toString()) }
                 .toFlowable(BackpressureStrategy.BUFFER)
                 .flatMap { src ->
                     Flowable.using(
                             { newDirectoryStream(src) },
-                            { reader -> Flowable.fromIterable(reader).filter { it.isDirectory() }.map { SourceGame(sourceDirectory = src.toString(), gameDirectory = it.toString(), glob = "") } },
+                            { reader ->
+                                val sourceGames = configService.readThisMachine().sourceGames
+                                Flowable.fromIterable(reader)
+                                        .filter { it.isDirectory() }
+                                        .filter { game -> sourceGames.none { it.gameDirectory == game.toString() } }
+                                        .map {
+                                            SourceGame(sourceDirectory = src.toString(), gameDirectory = it.toString())
+                                        }
+                                        .mergeWith(Flowable.fromIterable(sourceGames))
+                            },
                             { reader -> reader.close() }
-                    )
+                    ).sorted(compareBy { it.gameDirectory })
                 }
-                .subscribe { sourceGames.add(it) }
+                .subscribe { it -> sourceGames.add(it) }
 
         onCellEdit
                 .doOnNext { logger.info { "Updating sourceGame '$it'" } }
                 .zipWith(localConfig) { sourceGame, machine ->
-                    machine.sourceGames.removeIf { it.gameDirectory == it.gameDirectory }
+                    machine.sourceGames.removeIf { sourceGame.gameDirectory == it.gameDirectory }
                     machine.sourceGames.add(sourceGame)
                     machine
                 }.subscribe(localConfig)
 
         selectedGame.debounce(500, MILLISECONDS)
                 .doOnNext { logger.info { "Game selected '$it'" } }
+                .doOnNext { gameFiles.clear(); }
                 .toFlowable(BackpressureStrategy.BUFFER)
-                .map { it.gameDirectory }
-                .map { Paths.get(it) }
                 .flatMap { src ->
                     Flowable.using(
-                            { newDirectoryStream(src) },
+                            { newDirectoryStream(Paths.get(src.gameDirectory), src.glob) },
                             { reader -> Flowable.fromIterable(reader).filter { !it.isDirectory() } },
                             { reader -> reader.close() }
                     )
