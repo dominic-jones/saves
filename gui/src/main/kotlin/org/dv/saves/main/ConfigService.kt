@@ -67,9 +67,14 @@ class ConfigService(
 
     private fun machineId(): String {
         return SystemInfo().hardware.processor.processorID
-                .also { it -> logger.info { "Id '$it'" } }
                 .let { hasher.hashString(it, Charsets.UTF_8) }
                 .toString()
+    }
+
+    fun readThisMachine(backupLocation: String): Machine {
+        return readConfig(backupLocation)
+                .machines
+                .find { it.machineId == machineId() }!!
     }
 
     private fun readConfig(backupLocation: String): Config {

@@ -27,7 +27,6 @@ class MainController : Controller() {
     private val configService: ConfigService by di()
 
     val backupPath: Subject<String> = BehaviorSubject.create()
-
     val initConfig: PublishSubject<Unit> = PublishSubject.create()
 
     val addSourceDirectory: PublishSubject<Unit> = PublishSubject.create()
@@ -45,10 +44,19 @@ class MainController : Controller() {
             .cache()
 
     init {
+        Observable.just(Unit)
+                .doOnNext { logger.info { "${this.javaClass.name} started" } }
+                .subscribe()
+
         val configPath = backupPath.debounce(500, TimeUnit.MILLISECONDS)
                 .map { Paths.get(it) }
                 .doOnNext { logger.info { "Backup path changed to '$it'" } }
                 .cache()
+
+        configPath.map { configService.readThisMachine(it.toString()) }
+                .doOnNext { logger.info { "This happened '$it'" } }
+                .map { it.sourceDirectories.map { SourceDirectory(it) } }
+                .subscribe { sourceDirectories.addAll(it) }
 
         pathErrors = configPath
                 .map {

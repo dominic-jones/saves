@@ -88,6 +88,7 @@ class MainView : View() {
             }
         }
         tableview(controller.sourceGames) {
+            prefHeight = 140.0
             readonlyColumn("SourceDir", SourceGame::sourceDirectory)
             readonlyColumn("GameDir", SourceGame::gameDirectory)
         }
