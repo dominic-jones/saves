@@ -2,7 +2,6 @@ package org.dv.saves.main
 
 import com.github.thomasnield.rxkotlinfx.actionEvents
 import com.github.thomasnield.rxkotlinfx.events
-import com.github.thomasnield.rxkotlinfx.subscribeOnFx
 import com.github.thomasnield.rxkotlinfx.toBinding
 import com.github.thomasnield.rxkotlinfx.toObservable
 import javafx.event.ActionEvent
@@ -18,6 +17,7 @@ class MainView : View() {
     companion object : KLogging()
 
     private val controller: MainController by inject()
+    private val globalViewModel: GlobalViewModel by di()
 
     override val root = vbox {
         vbox {
@@ -25,21 +25,17 @@ class MainView : View() {
                 label("Backup dir")
                 textfield {
                     prefWidth = 400.0
-                    controller.global.subscribe { text = it.backupLocation }
+                    globalViewModel.backupLocation.subscribe { text = it }
 
                     events(ActionEvent.ACTION)
-                            .map { Unit }
-                            .startWith(Unit)
                             .map { text }
-                            .distinctUntilChanged()
-                            .subscribe(controller.backupPath)
+                            .subscribe(globalViewModel.backupLocationChanged)
 
-                    controller.validPath
-                            .subscribeOnFx()
+                    globalViewModel.pathErrors
                             .subscribe {
                                 when (it) {
-                                    true -> style = null
-                                    false -> style {
+                                    PathError.NONE -> style = null
+                                    else -> style {
                                         textBoxBorder = Color.RED
                                         focusColor = Color.RED
                                     }
@@ -49,18 +45,17 @@ class MainView : View() {
             }
             button("Init") {
                 enableWhen(
-                        controller.validPath
-                                .subscribeOnFx()
-                                .toBinding()
+                        globalViewModel.pathErrors.map { it != PathError.NONE }.toBinding()
                 )
                 actionEvents()
                         .map { Unit }
                         .subscribe(controller.initConfig)
             }
             text {
-                controller.pathErrors
-                        .subscribeOnFx()
-                        .subscribe { text = it }
+                bind(globalViewModel.pathErrors
+                        .filter { it != PathError.NONE }
+                        .map { it.name }
+                        .toBinding())
             }
         }
         vbox {
