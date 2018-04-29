@@ -1,10 +1,6 @@
 package org.dv.saves.main
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect
-import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.hash.HashFunction
 import com.google.common.hash.Hashing
@@ -17,16 +13,11 @@ import java.nio.file.Paths
 
 @Service
 class ConfigService(
-        private val hasher: HashFunction = Hashing.sha256()
+        private val hasher: HashFunction = Hashing.sha256(),
+        private val objectMapper: ObjectMapper
 ) {
 
     companion object : KLogging()
-
-    private val objectMapper: ObjectMapper = ObjectMapper()
-            .registerModule(KotlinModule())
-            .enable(SerializationFeature.INDENT_OUTPUT)
-            .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
-            .setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
 
     private fun File.ifFile(): File? {
         return if (this.isFile) this else null
