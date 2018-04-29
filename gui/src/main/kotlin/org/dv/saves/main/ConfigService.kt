@@ -5,9 +5,9 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.google.common.hash.HashFunction
 import com.google.common.hash.Hashing
 import mu.KLogging
+import org.dv.saves.extensions.ifFile
 import org.springframework.stereotype.Service
 import oshi.SystemInfo
-import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 
@@ -18,10 +18,6 @@ class ConfigService(
 ) {
 
     companion object : KLogging()
-
-    private fun File.ifFile(): File? {
-        return if (this.isFile) this else null
-    }
 
     fun readGlobal(): GlobalConfig {
         val globalPath = Paths.get(System.getProperty("user.home"))
