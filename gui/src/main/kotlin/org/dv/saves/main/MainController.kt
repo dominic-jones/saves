@@ -1,7 +1,5 @@
 package org.dv.saves.main
 
-import com.github.thomasnield.rxkotlinfx.additions
-import com.github.thomasnield.rxkotlinfx.removals
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
@@ -102,37 +100,6 @@ class MainController : Controller() {
         addSourceDirectory.map { "directory" }
                 .map { SourceDirectory(it) }
                 .subscribe { sourceDirectories += it }
-
-        sourceDirectories.removals()
-                .doOnNext { logger.info { "sourceDir removals '$it'" } }
-                .doOnNext { configService.removeSourceDirectory(it.dir) }
-                .subscribe { src -> sourceGames.removeIf { it.sourceDirectory == src.dir } }
-
-        sourceDirectories.additions()
-                .doOnNext { logger.info { "sourceDir additions '$it'" } }
-                .map { it.dir }
-                .map { Paths.get(it) }
-                .filter { it.isDirectory() }
-                .doOnNext { sourceGames.clear() }
-                .doOnNext { configService.addSourceDirectory(it.toString()) }
-                .toFlowable(BackpressureStrategy.BUFFER)
-                .flatMap { src ->
-                    Flowable.using(
-                            { newDirectoryStream(src) },
-                            { reader ->
-                                val sourceGames = configService.readThisMachine().sourceGames
-                                Flowable.fromIterable(reader)
-                                        .filter { it.isDirectory() }
-                                        .filter { game -> sourceGames.none { it.gameDirectory == game.toString() } }
-                                        .map {
-                                            SourceGame(sourceDirectory = src.toString(), gameDirectory = it.toString())
-                                        }
-                                        .mergeWith(Flowable.fromIterable(sourceGames))
-                            },
-                            { reader -> reader.close() }
-                    ).sorted(compareBy { it.gameDirectory })
-                }
-                .subscribe { it -> sourceGames.add(it) }
 
         onCellEdit
                 .doOnNext { logger.info { "Updating sourceGame '$it'" } }

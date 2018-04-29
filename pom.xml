@@ -23,7 +23,7 @@
         <kotlin.version>1.2.40</kotlin.version>
         <kotlin-logging.version>1.5.4</kotlin-logging.version>
         <rxkotlinfx.version>2.2.2</rxkotlinfx.version>
-        <rxjava.version>2.1.12</rxjava.version>
+        <rxjava.version>2.1.13</rxjava.version>
         <tornadofx.version>1.7.15</tornadofx.version>
 
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>

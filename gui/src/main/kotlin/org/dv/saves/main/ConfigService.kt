@@ -39,7 +39,7 @@ class ConfigService(
         val config = Config(
                 setOf(Machine(
                         id,
-                        mutableSetOf(),
+                        mutableListOf(),
                         mutableSetOf()
                 ))
         )
@@ -79,25 +79,6 @@ class ConfigService(
                 .toFile()
                 .printWriter()
                 .use { objectMapper.writeValue(it, config) }
-    }
-
-    fun addSourceDirectory(dir: String) {
-        val backupLocation = readGlobal().backupLocation
-        val config = readConfig(backupLocation)
-        config.machines
-                .find { it.machineId == machineId() }
-                ?.sourceDirectories?.add(dir)
-        saveConfig(config, Paths.get(backupLocation))
-    }
-
-    fun removeSourceDirectory(dir: String) {
-        val backupLocation = readGlobal().backupLocation
-        val config = readConfig(backupLocation)
-        config.machines
-                .find { it.machineId == machineId() }
-                ?.sourceDirectories
-                ?.remove(dir)
-        saveConfig(config, Paths.get(backupLocation))
     }
 
     fun update(machine: Machine) {

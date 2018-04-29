@@ -18,6 +18,7 @@ class MainView : View() {
 
     private val controller: MainController by inject()
     private val globalViewModel: GlobalViewModel by di()
+    private val configViewModel: ConfigViewModel by di()
 
     override val root = vbox {
         vbox {
@@ -59,7 +60,7 @@ class MainView : View() {
             }
         }
         vbox {
-            listview(controller.sourceDirectories) {
+            listview(configViewModel.sourceDirectories) {
                 isEditable = true
                 prefHeight = 140.0
                 cellFactory = Callback {
@@ -80,10 +81,10 @@ class MainView : View() {
             button("Add") {
                 actionEvents()
                         .map { Unit }
-                        .subscribe(controller.addSourceDirectory)
+                        .subscribe(configViewModel.addSourceDirectory)
             }
         }
-        tableview(controller.sourceGames) {
+        tableview(configViewModel.sourceGames) {
             prefHeight = 140.0
             selectionModel.selectedItemProperty()
                     .toObservable()

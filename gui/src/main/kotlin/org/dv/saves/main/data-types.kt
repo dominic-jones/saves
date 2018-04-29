@@ -1,5 +1,6 @@
 package org.dv.saves.main
 
+import java.nio.file.Path
 import java.nio.file.Paths
 
 data class GlobalConfig(
@@ -14,9 +15,18 @@ data class Config(
 
 data class Machine(
         val machineId: String,
-        val sourceDirectories: MutableSet<String>,
+        val sourceDirectories: List<String>,
         val sourceGames: MutableSet<SourceGame>
-)
+) {
+    fun withSourceDirectory(src: Path): Machine {
+
+        return copy(sourceDirectories = sourceDirectories.plus(src.toString()))
+    }
+
+    fun withoutSourceDirectory(src: String): Machine {
+        return copy(sourceDirectories = sourceDirectories.minus(src))
+    }
+}
 
 data class SourceDirectory(
         val dir: String
