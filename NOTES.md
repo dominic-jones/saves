@@ -1,0 +1,1 @@
+Not liking having Observables stretching all the way through the domain layer, consider options
