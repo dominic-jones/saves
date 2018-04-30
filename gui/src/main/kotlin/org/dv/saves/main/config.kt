@@ -9,7 +9,6 @@ import com.google.common.hash.Hashing
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
-import io.reactivex.disposables.Disposable
 import io.reactivex.rxkotlin.withLatestFrom
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
@@ -17,6 +16,8 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import mu.KLogging
 import org.dv.saves.extensions.isDirectory
+import org.dv.saves.extensions.subscribe
+import org.dv.saves.extensions.toObservableList
 import org.springframework.stereotype.Component
 import oshi.SystemInfo
 import java.nio.file.Files
@@ -173,26 +174,4 @@ data class ConfigViewModel(
                     sourceGames.setAll(it)
                 }
     }
-
-    fun <T> Observable<T>.subscribe(store: Store<T>): Disposable {
-        return this.subscribe { store.publish(it) }
-    }
-
-    fun <T> Observable<T>.toObservableList(): ObservableList<T> {
-        val list = FXCollections.observableArrayList<T>()
-        this.observeOnFx()
-                .subscribe {
-                    list.add(it)
-                }
-        return list
-    }
-
-//    fun <T> Observable<List<T>>.toObservableList(): ObservableList<T> {
-//        val list = FXCollections.observableArrayList<T>()
-//        this.observeOnFx()
-//                .subscribe {
-//                    list.setAll(it)
-//                }
-//        return list
-//    }
 }

@@ -3,7 +3,6 @@ package org.dv.saves.main
 import io.reactivex.BackpressureStrategy
 import io.reactivex.Flowable
 import io.reactivex.Observable
-import io.reactivex.rxkotlin.withLatestFrom
 import io.reactivex.rxkotlin.zipWith
 import io.reactivex.subjects.BehaviorSubject
 import io.reactivex.subjects.PublishSubject
@@ -11,6 +10,7 @@ import io.reactivex.subjects.Subject
 import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import mu.KLogging
+import org.dv.saves.extensions.isDirectory
 import tornadofx.*
 import java.nio.file.Files.exists
 import java.nio.file.Files.isDirectory
@@ -27,25 +27,11 @@ class MainController : Controller() {
 
     private val localConfig: Subject<Machine> = BehaviorSubject.create()
 
-    val backupPath: Subject<String> = BehaviorSubject.create()
     val initConfig: PublishSubject<Unit> = PublishSubject.create()
 
-    val addSourceDirectory: PublishSubject<Unit> = PublishSubject.create()
-
-    val pathErrors: Observable<String>
-    val validPath: Observable<Boolean>
-
-    val sourceDirectories: ObservableList<SourceDirectory> = FXCollections.observableArrayList()
-    val sourceGames: ObservableList<SourceGame> = FXCollections.observableArrayList()
     val gameFiles: ObservableList<GameFile> = FXCollections.observableArrayList()
 
     val selectedGame: PublishSubject<SourceGame> = PublishSubject.create()
-
-    val global: Observable<GlobalConfig> = Observable.fromCallable { configService.readGlobal() }
-            .doOnNext { logger.info { "Found global '$it'" } }
-            .filter { it.isValid() }
-            .doOnNext { logger.info { "global isValid '$it'" } }
-            .cache()
 
     val onCellEdit: PublishSubject<SourceGame> = PublishSubject.create()
 
@@ -54,52 +40,10 @@ class MainController : Controller() {
                 .doOnNext { logger.info { "${this.javaClass.name} started" } }
                 .subscribe()
 
-        val configPath = backupPath.debounce(500, MILLISECONDS)
-                .map { Paths.get(it) }
-                .doOnNext { logger.info { "Backup path changed to '$it'" } }
-                .cache()
-
-        configPath.map { configService.readThisMachine(it.toString()) }
-                .doOnNext { logger.info { "Loading config for machine '$it'" } }
-                .subscribe(localConfig)
-
-        localConfig
-                .map { it.sourceDirectories.map { SourceDirectory(it) } }
-                .doOnNext { sourceDirectories.clear() }
-                .subscribe { sourceDirectories.addAll(it) }
-
         localConfig.distinct()
                 .doOnNext { configService.update(it) }
                 .doOnNext { logger.info { "Saving config '$it'.. " } }
                 .subscribe()
-
-        pathErrors = configPath
-                .map {
-                    if (!it.exists()) "Path does not exist"
-                    else if (!it.isDirectory()) "Path is not a directory"
-                    else ""
-                }
-
-        validPath = pathErrors
-                .doOnNext { logger.info { "pathErrors '$it'" } }
-                .map {
-                    when (it) {
-                        "" -> true
-                        else -> false
-                    }
-                }
-                .doOnNext { logger.info { "Path is valid: '$it'" } }
-                .startWith(false)
-                .cache()
-
-        initConfig
-                .doOnNext { logger.info { "Initialising config.. " } }
-                .withLatestFrom(configPath) { _, path -> configService.initData(path) }
-                .subscribe()
-
-        addSourceDirectory.map { "directory" }
-                .map { SourceDirectory(it) }
-                .subscribe { sourceDirectories += it }
 
         onCellEdit
                 .doOnNext { logger.info { "Updating sourceGame '$it'" } }
@@ -123,7 +67,4 @@ class MainController : Controller() {
                 .map { GameFile(file = it.toString()) }
                 .subscribe { gameFiles.add(it) }
     }
-
-    private fun Path.exists(): Boolean = exists(this)
-    private fun Path.isDirectory(): Boolean = isDirectory(this)
 }
