@@ -170,8 +170,6 @@ data class ConfigViewModel(
                             .toList()
                 }
                 .observeOnFx()
-                .subscribe {
-                    sourceGames.setAll(it)
-                }
+                .toObservableList()
     }
 }

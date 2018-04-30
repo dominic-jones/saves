@@ -1,6 +1,7 @@
 package org.dv.saves.extensions
 
 import com.github.thomasnield.rxkotlinfx.observeOnFx
+import io.reactivex.Flowable
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
 import javafx.collections.FXCollections
@@ -12,6 +13,15 @@ fun <T> Observable<T>.subscribe(store: Store<T>): Disposable {
 }
 
 fun <T> Observable<T>.toObservableList(): ObservableList<T> {
+    val list = FXCollections.observableArrayList<T>()
+    this.observeOnFx()
+            .subscribe {
+                list.add(it)
+            }
+    return list
+}
+
+fun <T> Flowable<T>.toObservableList(): ObservableList<T> {
     val list = FXCollections.observableArrayList<T>()
     this.observeOnFx()
             .subscribe {
